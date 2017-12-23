@@ -1,0 +1,29 @@
+A) False; INT_MIN < 3, but -3 is not less than -INT_MIN since INT_MAX only goes up to |INT_MIN|-1
+
+B) True; Shifting in binary by w bits is equal to x * 2(w).
+	Thus:
+		(x+y)*2^4 +y-x
+		16x+16y+y-x
+		17y+15x
+		Therefore, they are always equal.
+
+C) True; Knowing that ~x = -x-1,
+		~x+~y+1				~(x+y)
+		(-1-x)+(-1-y)+1		-(x+y)-1
+		-(x+y)-1		
+		Therefore, since left hand and right hand side are equal, this is always equal.
+
+D) True; Negation for unsigned is a piecewise function. If i == 0; -i = i. If i > 0; i = 2^32-i;
+	Thus,
+		Left hand side:
+			ux - uy = ux + 2^32 - uy
+		Right hand side:
+			-(unsigned)(y-x	) = 2^32 - (uy - ux)
+			= 2^32. + ux - uy
+		Since left and right hand side are equal, this is always equal
+
+E) True; When shifting to the right two digits, the last two digits are dropped. When shifting back, zero's are added instead. Thus, if the last two digits were originally 0, then both are equal. However, if either of the last two digits were 1's, then the new value is less than the original value.
+
+F) False; x = 1010101; x >> 1 = 1101010; ux >> 1 = 1101010; ux & (-1 << 31) = 1000000
+
+G) True; Since 128 is a multiple of 2, and since 127 in binary is 1111111, only the last 7 digits of x in binary matter. Just as in decimal system, a multiple of ten is easily spotted by having a zero in the one's place, and a multiple of 100 is easily spotted by having a zero in the one's and ten's place. The same applies for binary, except in terms of multiples of two. Thus, looking only at the last 7 digits of x can be used to find the mod.
