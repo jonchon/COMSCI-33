@@ -1,0 +1,161 @@
+I began this project by downloading the required files into lnxsrv.
+
+Once downloaded, I copied the entire directory into a different directory
+so that I could always go back to the original copy of openmplab to test
+whether my version is faster.
+
+$ cp -R openmplab original
+
+This command copies the whole directory into another directory called original.
+To test the current speed of the project, I used the instructions in the specs
+
+$ make seq
+$ ./seq
+
+Output:
+FUNC TIME : 0.743661
+TOTAL TIME : 2.533031
+
+In order to get more specifics about each function in the program, I ran with
+GPROF using the following code.
+
+$ make seq GPROF=1
+$ ./seq
+
+Output:
+FUNC TIME : 0.804611
+TOTAL TIME : 2.669524
+
+$ gprof seq
+
+Output:
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  ms/call  ms/call  name    
+ 73.96      0.65     0.65       15    43.39    44.85  func1
+ 13.09      0.77     0.12  5177344     0.00     0.00  rand2
+  3.41      0.80     0.03   491520     0.00     0.00  findIndexBin
+  3.41      0.83     0.03        1    30.04   123.33  addSeed
+  1.14      0.84     0.01       15     0.67     0.67  func4
+  1.14      0.85     0.01        2     5.01     5.01  init
+  1.14      0.86     0.01        1    10.01    10.01  imdilateDisk
+  1.14      0.87     0.01                             filter
+  1.14      0.88     0.01                             sequence
+  0.57      0.88     0.01       15     0.33     0.33  rand1
+  0.00      0.88     0.00   983042     0.00     0.00  round
+  0.00      0.88     0.00       16     0.00     0.00  dilateMatrix
+  0.00      0.88     0.00       15     0.00     0.00  func2
+  0.00      0.88     0.00       15     0.00     0.00  func3
+  0.00      0.88     0.00       15     0.00     2.00  func5
+  0.00      0.88     0.00        2     0.00     0.00  get_time
+  0.00      0.88     0.00        1     0.00     0.00  elapsed_time
+  0.00      0.88     0.00        1     0.00     0.00  fillMatrix
+  0.00      0.88     0.00        1     0.00     0.00  func0
+  0.00      0.88     0.00        1     0.00     0.00  getNeighbors
+
+Looking at this output, it can be seen that the most work needs to be done on
+func1. 
+
+After this, I spent my time going over the code several times in order to catch things
+I could improve on. Typical changes include
+
+#pragma omp parallel for num_threads(28) private(...) firstprivate(...) 
+
+28 was chosen after much guessing and testing. It provided fast function time while also
+providing more consistency.
+Inside the (...) for private, I included all variables that were initialized inside the
+for loop.
+Inside the (...) for firstprivate, I included all variables that were already initialized
+before the for loop.
+
+Occationally, I would use reduction(+: ...) when the output after each loop would be added
+together.
+
+Other things I did were to declare local variables for commonly occurring expressions and
+expressions inside of for loops.
+This includes the values of arrays that were accessed several times, casting, and
+mathematical expressions that evaluate to constants.
+
+I also did a lot of smaller things to improve the function time such as separating
+expressions. One particular example is in func1. inside the for loop, every component
+was divided by 50 and summed together. However, simply summing everything together and
+then dividing by 50 decreased the function time.
+
+After each change, I would check the correctness of my code.
+
+$ make clean
+$ make check
+
+Output:
+gcc -o omp  -O3 -fopenmp filter.c main.c func.c util.c -lm
+cp omp filter
+./filter
+FUNC TIME : 0.035987
+TOTAL TIME : 1.881806
+diff --brief correct.txt output.txt
+
+Since the diff --brief correct.txt output.txt does not output anything, my code is correct.
+
+After optimizing the code, I checked the speedup.
+
+$ make clean
+$ make omp
+$ ./omp
+
+Output:
+FUNC TIME : 0.035302
+TOTAL TIME : 1.891637
+
+After optimization, it is
+0.743661 / 0.035302 = 21.07 times faster. 
+
+To check for memory leaks, I looked at the specs
+
+$ make omp MTRACE=1
+$ ./omp
+$ make checkmem
+
+Output:
+Memory not freed:
+-----------------
+           Address     Size     Caller
+0x0000000001860080   0x1ce0  at 0x7f7d1d253869
+0x0000000001861d70     0xc0  at 0x7f7d1d253869
+0x0000000001861e40     0xe8  at 0x7f7d1d2538b9
+0x0000000001861f30    0x240  at 0x7f7d1d783c25
+0x0000000001862180    0x240  at 0x7f7d1d783c25
+0x00000000018623d0    0x240  at 0x7f7d1d783c25
+0x0000000001862620    0x240  at 0x7f7d1d783c25
+0x0000000001862870    0x240  at 0x7f7d1d783c25
+0x0000000001862ac0    0x240  at 0x7f7d1d783c25
+0x0000000001862d10    0x240  at 0x7f7d1d783c25
+0x0000000001862f60    0x240  at 0x7f7d1d783c25
+0x00000000018631b0    0x240  at 0x7f7d1d783c25
+0x0000000001863400    0x240  at 0x7f7d1d783c25
+0x0000000001863650    0x240  at 0x7f7d1d783c25
+0x00000000018638a0    0x240  at 0x7f7d1d783c25
+0x0000000001863af0    0x240  at 0x7f7d1d783c25
+0x0000000001863d40    0x240  at 0x7f7d1d783c25
+0x0000000001863f90    0x240  at 0x7f7d1d783c25
+0x00000000018641e0    0x240  at 0x7f7d1d783c25
+0x0000000001864430    0x240  at 0x7f7d1d783c25
+0x0000000001864680    0x240  at 0x7f7d1d783c25
+0x00000000018648d0    0x240  at 0x7f7d1d783c25
+0x0000000001864b20    0x240  at 0x7f7d1d783c25
+0x0000000001864d70    0x240  at 0x7f7d1d783c25
+0x0000000001864fc0    0x240  at 0x7f7d1d783c25
+0x0000000001865210    0x240  at 0x7f7d1d783c25
+0x0000000001865460    0x240  at 0x7f7d1d783c25
+0x00000000018656b0    0x240  at 0x7f7d1d783c25
+0x0000000001865900    0x240  at 0x7f7d1d783c25
+0x0000000001865b50    0x240  at 0x7f7d1d783c25
+
+With so many memory leaks, I looked first using GDB, but I could not find anything at 0x240.
+Thus, I looked at piazza and saw that this is actually a misunderstanding since OpenMP 
+allocated global variables that are freed afterwards.
+
+Using the command to check for readability ouputs a single line from my func.c file. However,
+Since that line of code is required for the optimization, I cannot see any way to make all lines
+under 200 columns.
