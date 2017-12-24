@@ -1,0 +1,19 @@
+18)
+A)
+Following the trajectory, we can see that it is unsafe. At L1, the
+trajectory goes into the unsafe region.
+B)
+This trajectory is safe.
+C)
+This trajectory is unsafe. It enters the unsafe region at the point L2.
+
+24)
+Given that the functions in RIO I/O package are thread-safe, we only need to
+know whether or not they access shared or global data. Observing the functions,
+we can see that all of them take pointers as their argument. Thus, there is the
+chance that the pointers point to the same shared data. This depends on whether
+the caller is careful to make sure that none of the data is shared. Thus, this
+function is not implicitly reentrant.
+Looking at figure 10.5, we can see that the caller does not call any shared
+data in main, thus, the function is implicitly reentrant since the pointers
+will not point to the same address.
