@@ -1,0 +1,56 @@
+Using just the -O2 flag, I got the following output
+testovf:
+.LFB0:
+	.cfi_startproc
+	xorl	%eax, %eax
+	ret
+
+When using the -O2 flag, the compiler already knows that the answer will always
+be false. This is because any number n + 9223372036854775807 will always be 
+greater than n, unless there is overflow. However, -O2 does not account for 
+overflow, so it always returns 0.
+
+Using the -02 -fwrapv flags, I got the following output
+testovf:
+.LFB0:
+	.cfi_startproc
+	movabsq	$9223372036854775807, %rax
+	addq	%rdi, %rax
+	cmpq	%rdi, %rax
+	setl	%al
+	ret
+
+As can be seen by the code, this code actually does all of the operations that
+the C code asks it to do. It adds 9223372036854775807 to n and compares it to
+n. This method does not account for overflow. Since the assembly code is 
+following what the C code does exactly, an overflow will produce the wrong
+answer. 
+
+For -O2 -fsanitize=undefined
+testovf:
+.LFB0:
+	pushq	%rbp
+	pushq	%rbx
+	movabsq	$9223372036854775807, %rdx
+	movq	%rdi, %rbp
+	movq	%rdi, %rbx
+	subq	$8, %rsp
+	addq	%rdx, %rbp
+	jo	.L6
+.L2:
+	cmpq	%rbp, %rbx
+	setg	%al
+	addq	$8, %rsp
+	popq	%rbx
+	popq	%rbp
+	ret
+.L6:
+	movq	%rdi, %rsi
+	movl	$.Lubsan_data0, %edi
+	call	__ubsan_handle_add_overflow
+	jmp	.L2
+
+We can see in this code that it begins by pushing several registers into the stack.
+We can then see that, in the last line of .LFBO, %rip will jump to .L6 if Overflow
+Flag = 1. In .L6, we see that there is a code that handles overflows. Then, the code
+jumps to .L2, where the is a comparison and it cleans up the stack at that point.

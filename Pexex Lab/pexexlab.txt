@@ -1,0 +1,56 @@
+I began this lab by using starting GDB. I used the following command
+$ gdb ~eggert/bin64/bin/emacs-25.2
+Which launches GDB with the latest version of EMACS
+
+Then I created a breakpoint for Ftimes in order to observe what happens 
+when that function is called.
+(gdb) break Ftimes
+
+After setting the breakpoint, I ran the program 
+(gdb) r -Q -batch -eval '(print (* 1250284240 -1844255039))'
+
+Next, I used the following command in order to see the machine code
+and also get the columns that are needed for trace.tr
+(gdb) set disassemble-next-line on
+
+I then looked online and found a command that would save all output
+from gdb into gdb.txt.
+(gdb) set logging on
+
+Afterwards, I continuously pressed the following command until the
+stack frame was no longer in arith_driver or Ftimes
+(gdb) si
+
+After getting the file, I moved gdb.txt into trace.tr
+$ mv gdb.txt trace.tr
+
+I then manually deleted every line that was uneccesary to trace.tr
+
+Afterwards, in order to make trace.tr into the format required by the
+specs, I used the command
+$ cut -c16- trace.tr > trace2.tr
+$ mv trace2.tr trace.tr
+
+in order to get rid of the arrows in front of the lines and in order
+to get rid of 0x and the unneeded zeros.
+
+Then, looking at the format required by the specs, I noticed that I
+did not need <arith_driver+...>: or <Ftimes+...>: Thus, I added spaces
+in order to make them all have the same amount of digits after the '+'.
+Then, I used the command
+$ sed 's/..................//' trace.tr > trace2.tr
+$ mv trace2.tr trace.tr
+
+in order to get rid of the stack frame. While this code may look like it
+would delete the location required by jump functions, it didn't because
+the stack frame ends with ':', which makes it 18 characters as opposed to
+the 17 characters after jump. Since there is no character after '>' in jump,
+it does not delete the jump locations.
+
+Next, I began to work on making the fourth column. I went back to GDB using
+the commands above and used the commands in order to find the value of the
+registers
+(gdb) info registers ___
+Where ___ is whatever register I needed to get information about.
+I manually entered all of this information into the fourth column.
+

@@ -1,0 +1,50 @@
+1)
+The reason that the trace did not produce the correct mathematic result is because
+of the way that emacs programming language elisp handles integers. This can be seen
+in line 231 of lisp.h where it says VALBITS = BITS_PER_EMACS_INT - GCTYPEBITS.
+GCTYPEBITS is defined in line 67 as being 3. We can see that ELISP uses 2 bits for
+tagging and one bit for signs. The line for error is line 82 in trace.tr, which says
+lea 0x2(,%rbp,4),%rax.
+The reason is that multiplying by four is essentially the same thing as left shifting
+by 2. However, looking at the value for %rax, we can see that there is going to be
+an overflow.
+
+2)
+Looking at data.c, we see that in lin 3732 through 3734 that it says
+DEFAR_LISTP ("most-negative-fixnum", Vmost_negative_fixnum,
+	    doc : /*The smallest value that is representable in a Lisp integer.	*/);
+Vmost_negative_fixnum = make_number (MOST_NEGATIVE_FIXNUM);
+
+Looking at lisp.h, we find in line 830 and 831 that it says
+#define MOST_POSITIVE_FIXNUM (EMACS_INT_MAX >> INTTYPEBITS) 
+#define MOST_NEGATIVE_FIXNUM (-1 - MOST_POSITIVE_FIXNUM)
+
+Where INTYPEBITS is define as GCTYPEBITS - 1 in line 234. Since in problem 1 it was
+already determined that CTYPEBITS is 3 INTTYPEBITS is 2. EMACS_INT_MAX is simply
+defined as INT_MAX in line 80, so we can determine that MOST_POSITIVE_NUMBER is 
+(2^(63)-1) >> 2, so most negative number is -1 - ((2^(63)-1) >> 2), which evaluates
+to -2305843009213693952.
+
+3)
+The most positive number is (2^63 - 1) >> 2, which in hexidecimal is
+0x1FFFFFFFFFFFFFFF. Multiplying this by itself four times is in the form of 1... 001.
+Thus, when fitting this into 62 bits, the answer is simply 1, as the most significant
+bits are truncated out.
+
+4)
+Emacs is not compiled with -fwrapv because doing so would allow for overflow without
+any type of error. Thus, incorrect arithmetic results could pass without error
+because the compiler automatically wraps around when there is overflow.
+
+5)
+The error occurs in line 2428 in editfns.c line 2428. After setting
+break editfns.c:2428
+and running the program, I continued to step and use info registers in order to get
+the value at each registers. After a while, I used the command
+continue
+and saw that the program crashed after <__strcpy_sse2_unaligned+411>, which had the
+command movdqu %xmm7, -0x10(%rdi). I used info registers and found the that %rdi was
+0x148374a, which had the value 0x58585858.
+After stepping one more time, I received a segmentation fault. %rdi had the value
+0x149b00a. When I tried to access the value of this, I was told that I cannot
+access memory at this address. 
