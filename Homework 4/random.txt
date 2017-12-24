@@ -1,0 +1,29 @@
+A. Always 1
+   While it may seem like this expression will not always yield 1 since converting between
+   double to float may cause overflow, keeping in mind that the dx was originally an int 
+   converted into a double (so no loss in value) shows that (float) dx cannot lead to overflow.
+   Thus, both x and dx may be rounded when casted into float, but they will be rounded in the 
+   same manner, causing this expression to always yield 1. 
+B. Not always 1
+   There is no issue with casting (x-y) into a double since casting from int to double allows
+   for the value to be preserved. However, there is an issue with the range of values. If
+   x == INT_MIN and y is any positive number, there will be overflow. However, there will not
+   be overflow for dx - dy since the range is greater. -fwrapv applies in this case as a result
+   of overflow.
+C. Always 1
+   Since dx, dy, and dz are all ints casted into doubles, there will not be any loss in precision.
+   The normal issue of floating points not being associative does not matter in this case, since
+   doubles are much larger than ints. Thus, any addition of ints can be held by the doubles, so
+   associative property holds in this case.
+D. Not always 1
+   There may be problems due to rounding that would cause this expression to yield false. An example
+   of an expression is if 
+   dx == INT_MAX
+   dy == INT_MAX
+   dz == 2151679233
+   As a result of rounding to even and only 52 f bits, when testing out this input, it can be seen
+   that the associative property does not hold. It does not hold because there is different rounding
+   that happens when multiplying in different orders. 
+E. Not always 1
+   If dx == 0, then dx/dx == NaN, since 0/0 is undefined. However, if dz == 3, then 3/3 would 
+   be a number close to 1.0
